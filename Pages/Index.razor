@@ -1,0 +1,93 @@
+﻿@page "/"
+@inject HttpClient Http
+
+@if (todos == null)
+{
+    <p>Loading...</p>
+} else if (!todos.Any())
+{
+    <p>Nenhuma tarefa disponível ...</p>
+}
+else
+{
+    <div class="container">
+        <div class="content">
+          <form @onsubmit="HandleNewTask">
+            <input
+              class="form-control"
+              type="text"
+              placeholder="O que você precisa fazer hoje?"
+              @bind="newTodo"
+            >
+
+            <button class="btn btn-dark" type="submit">
+              Adicionar tarefa
+            </button>
+          </form>
+        </div>
+
+        <table class="table">
+          <thead>
+            <tr>
+                <th scope="col">Ação</th>
+                <th scope="col">Tarefa</th>
+                <th scope="col">Concluída</th>
+                <th scope="col">Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach (var todo in todos) {
+              <tr>
+                <td>
+                  <button class="btn" @onclick="@(() => HandleRemoveTask(todo.Id))" >
+                    <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-trash-fill" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5a.5.5 0 0 0-1 0v7a.5.5 0 0 0 1 0v-7z"/>
+                    </svg>
+                  </button>
+                </td>
+                <td>@todo.Description</td>
+
+                <td>
+                  <input type="checkbox" @bind="todo.IsDone">
+                </td>
+
+                <td>@todo.CreatedAt.ToString("dd/MM/yyyy")</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    protected override async Task OnInitializedAsync() => 
+      todos = await Http.GetFromJsonAsync<List<Todo>>("data/todos.json");
+    
+    public class Todo
+    {
+        public string Id { get; set; }
+        public string Description { get; set; }
+        public bool IsDone { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    private string newTodo = "";
+    
+    private List<Todo> todos = new List<Todo>();
+
+    void HandleNewTask() {
+      if (!string.IsNullOrEmpty(newTodo)) {
+        todos.Add(new Todo {
+          CreatedAt = DateTime.Now,
+          Description = newTodo,
+          Id = Guid.NewGuid().ToString()
+        });
+
+        newTodo = "";
+      }
+    }
+
+    void HandleRemoveTask(string id) {
+      todos.Remove(todos.First(x => x.Id == id));
+    }
+}
